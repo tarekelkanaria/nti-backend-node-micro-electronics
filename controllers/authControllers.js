@@ -1,10 +1,17 @@
 const User = require("../models/auth");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+
+const registerSchema = require("./validation/registerSchema");
 
 const saltRounds = parseInt(process.env.SALTROUNDS) || 10;
 
 const registerUser = async (req, res) => {
   try {
+    const { error, value } = registerSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
     // get user data
     const { username, email, password, role } = req.body;
     // validate data
@@ -47,7 +54,13 @@ const loginUser = async (req, res) => {
     if (!isPasswordMatch)
       return res.status(401).json({ msg: "Invalid Password" });
 
-    res.status(200).json({ msg: "Login successfully" });
+    const token = jwt.sign({
+      id: user._id,
+      role: user.role,
+      expiresIn: "1d",
+    });
+
+    res.status(200).json({ msg: "Login successfully", token });
   } catch (error) {
     console.log(error);
   }
